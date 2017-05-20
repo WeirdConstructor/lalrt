@@ -1,0 +1,4 @@
+{
+        macro-add: (define-macro (macro-add a b) `(+ ,a ,@b))
+        func-mul: (lambda (a b) (* a b 10))
+    }

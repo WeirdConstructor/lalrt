@@ -1,0 +1,19 @@
+# Should
+
+    - ASIO tcp/udp I/O thread, with option to auto-reconnect
+    - Graphics view with drawing primitives
+        - optimized for animations?
+    - Port drawing syntax from QLuaRT
+        - including PDF generation!
+    - LineEditor API completion
+    - Design A component, to copy, move and delete files.
+        - Maybe just one?
+        - Maybe for complete hierarchies
+        - With progress feedback!
+        - With async I/O if possible?
+            - For this definitively decouple the I/O component
+              from the dir hierarchy copy/move
+
+# Maybe
+
+    - Maybe: Port dynInputDlg?

@@ -1,0 +1,75 @@
+(import (rt qt))
+(import (rt mp))
+(import (rt proc))
+(import (lua debug))
+(import (lua basic))
+(import (lal syntax compiler))
+
+;(lal-syntax-compiler-debug-print-output)
+;(mp-set-debug-logging #t)
+
+(add-test test-qt-startup:
+  (lambda ()
+    (let ((token (mp-token))
+          (init-done #f))
+      (mp-send (proc-pid) [after-qt-exec:])
+      (mp-add-default-handler
+       (lambda (msg)
+         (when (eqv? (@2 msg) after-qt-exec:)
+           (set! init-done #t) (qt-quit))))
+      (qt-exec)
+      (.assert_eq *TC* #t init-done))))
+
+(add-test test-qt-startup-by-cb:
+  (lambda ()
+    (let ((init-done #f))
+      (qt-exec (lambda () (set! init-done #t) (qt-quit)))
+      (.assert_eq *TC* #t init-done))))
+
+
+(add-test test-qt-startup-with-cb-token-and-mp-redirect:
+  (lambda ()
+    (let ((init-done #f))
+      (mp-add-default-handler
+       (lambda (msg)
+         (when (eqv? (@2 msg) after-qt-exec-2:)
+           (set! init-done #t) (qt-quit))))
+      (qt-exec after-qt-exec-2:)
+      (.assert_eq *TC* #t init-done))))
+
+(add-test test-qt-startup-with-cb-token-and-mp-def-hdl:
+  (lambda ()
+    (let ((init-done #f))
+      (mp-add-default-handler
+       (lambda (m)
+         (when (eqv? (@2 m) after-qt-exec-3:)
+           (set! init-done #t)
+           (qt-quit))))
+      (qt-exec after-qt-exec-3:)
+      (.assert_eq *TC* #t init-done))))
+
+;-----------------------------------------------------------------------------
+
+; Msg format:
+
+#;(
+[_src-pid_ _src-token_ _rcv-token_ _arg1_ ...]
+
+; Blocking:
+
+(let ((msg (mp-wait ...)))
+  (mp-send ...))
+
+; Needing destructuring let:
+(let (((spid stok tok . args) (mp-wait ...)))
+  ...)
+
+; Event based:
+
+(let ((cb-token (mp-reg _token_ _prio_ _callback_)))
+  (mp-unreg cb-token)) ;<= also inside _callback_ (mp-unreg)
+; inside cb:
+  (mp-stop-here)
+
+(mp-unreg [cb-tokens])
+)

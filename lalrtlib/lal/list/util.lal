@@ -1,0 +1,20 @@
+(define (skip-until f lst)
+  (let ((out      [])
+        (skipping #t))
+    (do-each (elem lst)
+      (when (and skipping (f elem))
+          (set! skipping #f))
+      (when (not skipping)
+          (push! out elem)))
+    out))
+
+(define (drop n lst)
+  (let ((out []))
+    (for (i n (- (length lst) 1))
+      (push! out (@i lst)))
+    out))
+
+{
+  "skip-until" skip-until
+  "drop"       drop
+}

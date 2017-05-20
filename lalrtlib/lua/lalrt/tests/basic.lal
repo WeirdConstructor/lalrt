@@ -1,0 +1,4 @@
+(define X f123:)
+(add-test test-foo:
+ (lambda ()
+   (.assert_eq *TC* X f123:)))

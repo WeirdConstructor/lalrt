@@ -1,0 +1,135 @@
+(import (rt util))
+
+(add-test test-util-re-simple:
+  (lambda ()
+    (.assert_eq *TC*
+     (write-str [0 "f" "oo"])
+     (write-str (util-re "foo" "(f)(oo)" "n")))
+    (.assert_eq *TC*
+     (write-str [0 "foo" "f" "oo"])
+     (write-str (util-re "foo" [["(f)(oo)" "k"]] "n")))
+    (.assert_eq *TC*
+     (write-str ["foo" "f" "oo"])
+     (write-str (util-re "foo" ["(f)(oo)" "k"])))
+    (.assert_eq *TC*
+     (write-str ["foo" "f" "oo"])
+     (write-str (util-re "foo" [["(f)(oo)" "k"]])))
+    (.assert_eq *TC*
+     (write-str ["0" "f" "oo"])
+     (write-str (util-re "foo" ["(f)(oo)" "" "0"])))
+    (.assert_eq *TC*
+     (write-str ["0" "f" "oo"])
+     (write-str (util-re "foo" [["(f)(oo)" "" "0"]])))
+    (.assert_eq *TC*
+     (write-str [0 "0" "f" "oo"])
+     (write-str (util-re "foo" ["(f)(oo)" "t" "0"] "n")))
+    (.assert_eq *TC*
+     (write-str [0 "foo" "f" "oo"])
+     (write-str (util-re "foo" ["(f)(oo)" "k"] "n")))
+    (.assert_eq *TC*
+     (write-str [0 "X" "f" "oo"])
+     (write-str (util-re "foo" [["(f)(oo)" "" "X"]] "n")))
+    (.assert_eq *TC*
+     (write-str ["f" "oo"])
+     (write-str (util-re "foo" "(f)(oo)")))))
+
+(add-test test-util-re-simple:
+  (lambda ()
+    (.assert_eq *TC*
+     (write-str ["f" "oo"])
+     (write-str (util-re "foo" [["(f)(OO)" "i"]])))))
+(add-test test-util-re-simple:
+  (lambda ()
+    (.assert_eq *TC*
+     #f
+     (not (not (util-re "foo" "bar"))))))
+
+(add-test test-util-re-one-regex:
+  (lambda ()
+    (.assert_eq *TC*
+     (write-str [["f" "oo"]])
+     (write-str (util-re ["foobar" "foo"] [["(f)(oo)" "a"]])))
+    (.assert_eq *TC*
+     (write-str [["f" "oo"] ["f" "oo"]])
+     (write-str (util-re ["foobar" "foo"] "(f)(oo)")))
+    (.assert_eq *TC*
+     (write-str [["f" "oo"] ["f" "oo"]])
+     (write-str (util-re ["foobar" "foo"] ["(f)(oo)"])))))
+
+(add-test test-util-re-multi:
+  (lambda ()
+    (.assert_eq *TC*
+     (write-str ["bar" ["f" "oo"]])
+     (write-str (util-re ["foobar" "foo"] [["(f)(oo)" "a"] ["foo(bar)" "a"]])))))
+
+(add-test test-util-re-multi-tokens:
+  (lambda ()
+    (.assert_eq *TC*
+     (write-str [["X" "f" "oo"]])
+     (write-str (util-re ["foobar" "foo"] [["(f)(oo)" "a" "X"]]))
+    (.assert_eq *TC*
+     (write-str [["Y" "bar"] ["X" "f" "oo"]])
+     (write-str (util-re ["foobar" "foo"] [["(f)(oo)" "a" "X"]
+                                              ["foo(bar)" "a" "Y"]]))))))
+
+(add-test test-util-re-multi-tokens-case-insens:
+  (lambda ()
+    (.assert_eq *TC*
+     (write-str [["X" "f" "oo"] ["Y" "bar"] ["X" "f" "oo"]])
+     (write-str (util-re ["foobar" "foo"] [["(F)(OO)" "i" "X"]
+                                              ["FOO(BAR)" "i" "Y"]])))))
+
+(add-test test-util-re-replace:
+  (lambda ()
+    (.assert_eq *TC*
+     (write-str "barfoo")
+     (write-str (util-re [["foobar" "$2$1"]] "(foo)(bar)")))
+    (.assert_eq *TC*
+     (write-str [["fooooo" "bar"] "barfoo" ["foo" "bar"]])
+     (write-str (util-re ["fooooobar" ["foobar" "$2$1"] "foobar"]
+                            "(foo*)(bar)")))))
+
+(add-test test-util-re-global:
+  (lambda ()
+    (.assert_eq *TC*
+      (write-str [["foo" "foo" "oo"]
+                  ["bar" "bar" ""]
+                  ["foooo" "foooo" "oooo"]
+                  ["baaaar" "baaaar" ""]
+                  ["foo" "foo" "oo"]])
+      (write-str (util-re "foobarfooooerbaaaarfoo"
+                             [["((?:f(o+))|(?:ba+r))" "kg"]])))
+    (.assert_eq *TC*
+      (write-str [["foo" "oo"]
+                  ["bar" ""]
+                  ["foooo" "oooo"]
+                  ["baaaar" ""]
+                  ["foo" "oo"]])
+      (write-str (util-re "foobarfooooerbaaaarfoo"
+                             [["((?:f(o+))|(?:ba+r))" "g"]])))
+    (.assert_eq *TC*
+      (write-str ["foo" "bar" "foooo" "baaaar" "foo"])
+      (write-str (util-re "foobarfooooerbaaaarfoo"
+                             [["(?:fo+)|(?:ba+r)" "kg"]])))
+    (.assert_eq *TC*
+      (write-str [["foo" "foo"]
+                  ["bar" "bar"]
+                  ["foooo" "foooo"]
+                  ["baaaar" "baaaar"]
+                  ["foo" "foo"]])
+      (write-str (util-re "foobarfooooerbaaaarfoo"
+                             [["((?:fo+)|(?:ba+r))" "kg"]])))
+    (.assert_eq *TC*
+      (write-str ["foo" "bar" "foooo" "baaaar" "foo"])
+      (write-str (util-re "foobarfooooerbaaaarfoo"
+                             [["((?:fo+)|(?:ba+r))" "g"]])))))
+
+(add-test test-util-re-split:
+    (lambda ()
+      (.assert_eq *TC*
+        (write-str [["foo,efe," "rere," "er" "e"]
+                    ["foo" "efe" "grere" "gerge"]])
+        (write-str (util-re "foo,efe,grere,gerge" [["g" "s"] ["," "s"]])))
+      (.assert_eq *TC*
+        (write-str ["foo" "efe" "grere" "gerge"])
+        (write-str (util-re "foo,efe,grere,gerge" ["," "s"])))))

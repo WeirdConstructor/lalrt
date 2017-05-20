@@ -1,0 +1,139 @@
+diff -r 166c1ada791d qlualib/lua/lauxlib.cpp
+--- a/qlualib/lua/lauxlib.cpp	Fri Aug 05 14:42:34 2016 +0200
++++ b/qlualib/lua/lauxlib.cpp	Wed Aug 17 07:57:07 2016 +0200
+@@ -16,14 +16,12 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
+-#include "../lua/lualoghelp.h"
+ 
+ /* This file uses only the official API of Lua.
+ ** Any function declared here could be written as an application function.
+ */
+ 
+ #include "lua.h"
+-#include "lstate.h"
+ 
+ #include "lauxlib.h"
+ 
+@@ -948,10 +946,8 @@
+ 
+ 
+ static int panic (lua_State *L) {
+-  const char *csStr = lua_tostring(L, -1);
+-  G(L)->mainthread->log->write("PANIC: unprotected error in call to Lua API :");
+-  G(L)->mainthread->log->write(csStr);
+-  G(L)->mainthread->log->logError();
++  lua_writestringerror("PANIC: unprotected error in call to Lua API (%s)\n",
++                        lua_tostring(L, -1));
+   return 0;  /* return to Lua to abort */
+ }
+ 
+diff -r 166c1ada791d qlualib/lua/lbaselib.cpp
+--- a/qlualib/lua/lbaselib.cpp	Fri Aug 05 14:42:34 2016 +0200
++++ b/qlualib/lua/lbaselib.cpp	Wed Aug 17 07:57:07 2016 +0200
+@@ -16,12 +16,10 @@
+ #include <string.h>
+ 
+ #include "lua.h"
+-#include "lstate.h"
+ 
+ #include "lauxlib.h"
+ #include "lualib.h"
+ 
+-#include "../lua/lualoghelp.h"
+ 
+ static int luaB_print (lua_State *L) {
+   int n = lua_gettop(L);  /* number of arguments */
+@@ -35,13 +33,12 @@
+     lua_call(L, 1, 1);
+     s = lua_tolstring(L, -1, &l);  /* get result */
+     if (s == NULL)
+-      return luaL_error(L,
+-         LUA_QL("tostring") " must return a string to " LUA_QL("print"));
+-    if (i>1) G(L)->mainthread->log->write("\t", 1);
+-    G(L)->mainthread->log->write(s, l);
++      return luaL_error(L, "'tostring' must return a string to 'print'");
++    if (i>1) lua_writestring("\t", 1);
++    lua_writestring(s, l);
+     lua_pop(L, 1);  /* pop result */
+   }
+-  G(L)->mainthread->log->logInfo();
++  lua_writeline();
+   return 0;
+ }
+ 
+diff -r 166c1ada791d qlualib/lua/llex.cpp
+--- a/qlualib/lua/llex.cpp	Fri Aug 05 14:42:34 2016 +0200
++++ b/qlualib/lua/llex.cpp	Wed Aug 17 07:57:07 2016 +0200
+@@ -536,11 +536,6 @@
+         if (check_next1(ls, ':')) return TK_DBCOLON;
+         else return ':';
+       }
+-      case '\\': { // XXX: Custom QLuaRT Syntax: \[bla (a, b) return a + b]
+-        next(ls);
+-        if (check_next1(ls, '[')) return TK_FUNCTION;
+-        else return '\\';
+-      }
+       case '"': case '\'': {  /* short literal strings */
+         read_string(ls, ls->current, seminfo);
+         return TK_STRING;
+diff -r 166c1ada791d qlualib/lua/lparser.cpp
+--- a/qlualib/lua/lparser.cpp	Fri Aug 05 14:42:34 2016 +0200
++++ b/qlualib/lua/lparser.cpp	Wed Aug 17 07:57:07 2016 +0200
+@@ -580,7 +580,6 @@
+ */
+ static int block_follow (LexState *ls, int withuntil) {
+   switch (ls->t.token) {
+-    case ']':
+     case TK_ELSE: case TK_ELSEIF:
+     case TK_END: case TK_EOS:
+       return 1;
+@@ -790,15 +789,7 @@
+   checknext(ls, ')');
+   statlist(ls);
+   new_fs.f->lastlinedefined = ls->linenumber;
+-  switch (ls->t.token) {
+-    case ']': { // XXX: Custom QLuaRT Syntax: \[bla (a, b) return a + b]
+-      check_match(ls, ']', TK_FUNCTION, line);
+-      break;
+-    }
+-    default: {
+-      check_match(ls, TK_END, TK_FUNCTION, line);
+-    }
+-  }
++  check_match(ls, TK_END, TK_FUNCTION, line);
+   codeclosure(ls, e);
+   close_func(ls);
+ }
+diff -r 166c1ada791d qlualib/lua/lstate.cpp
+--- a/qlualib/lua/lstate.cpp	Fri Aug 05 14:42:34 2016 +0200
++++ b/qlualib/lua/lstate.cpp	Wed Aug 17 07:57:07 2016 +0200
+@@ -327,7 +327,6 @@
+   g->gcfinnum = 0;
+   g->gcpause = LUAI_GCPAUSE;
+   g->gcstepmul = LUAI_GCMUL;
+-  L->log = NULL; // QLuaRT customization
+   for (i=0; i < LUA_NUMTAGS; i++) g->mt[i] = NULL;
+   if (luaD_rawrunprotected(L, f_luaopen, NULL) != LUA_OK) {
+     /* memory allocation error: free partial state */
+diff -r 166c1ada791d qlualib/lua/lstate.h
+--- a/qlualib/lua/lstate.h	Fri Aug 05 14:42:34 2016 +0200
++++ b/qlualib/lua/lstate.h	Wed Aug 17 07:57:07 2016 +0200
+@@ -142,8 +142,6 @@
+   struct Table *mt[LUA_NUMTAGS];  /* metatables for basic types */
+ } global_State;
+ 
+-/* QLuaRT Customization: Extra Pointer for Log-Helper */
+-namespace qluahelp { class LogBuffer; }
+ 
+ /*
+ ** 'per thread' state
+@@ -171,7 +169,6 @@
+   unsigned short nCcalls;  /* number of nested C calls */
+   lu_byte hookmask;
+   lu_byte allowhook;
+-  qluahelp::LogBuffer *log; // QLuaRT Customization
+ };
+ 
+ 

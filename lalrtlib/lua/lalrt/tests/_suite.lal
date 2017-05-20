@@ -1,0 +1,18 @@
+(import (lua basic))
+(define *TC*   (lua-require "lal.util.test_case"))
+(define *UTIL* (lua-require "lal.lang.util"))
+(define *T*    (.TestCase *TC* "lal-tests" 23))
+
+(define (add-test name-kw function)
+  ($!name-kw *T* (lambda () (.exec_lua_code_func *UTIL* function))))
+
+(include "csv.lal")
+(include "basic.lal")
+(include "encoding.lal")
+(include "sys.lal")
+(include "util-re.lal")
+(include "qt.lal")
+
+(..run *T*)
+
+(lua-require "lalrt.tests._lua_suite")

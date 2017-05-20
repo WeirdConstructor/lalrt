@@ -1,0 +1,20 @@
+(import (lua io))
+
+(define (read-file file)
+  (let ((fh (lua-io-open file "r")))
+    (when (nil? fh) (error (str "couldn't open: " file)))
+    (let ((contents (..read fh "a")))
+      (..close fh)
+      contents)))
+
+(define (write-file file contents)
+  (let ((fh (lua-io-open file "w")))
+    (when (nil? fh) (error (str "couldn't open: " file)))
+    (..write fh contents)
+    (..close fh)))
+
+{
+  read-file: read-file
+  write-file: write-file
+}
+

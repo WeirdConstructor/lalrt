@@ -1,0 +1,34 @@
+(define (filter op seq)
+  (let ((out []) (i 0))
+    (do-each (v seq)
+      (when (op v i) (push! out v))
+      (set! i (+ i 1)))
+    out))
+(import (lal syntax-compiler))
+(lal-syntax-compiler-debug-print-output)
+(define (permuts seq)
+  #;(display (write-str ["call" seq (length seq)])) #;(newline)
+  (if (eq? (length seq) 0)
+    []
+    (if (eq? (length seq) 1)
+      [[(@0 seq)]]
+      (let ((out []))
+        (for (i 0 (- (length seq) 1))
+          (append!
+           out
+           (map (lambda (l) (cons! (@i seq) l))
+                (permuts (filter (lambda (v j) (not (eq? j i))) seq)))))
+        out))))
+
+
+;(display (write-str (permuts ["i" "x" "y" "o"])))
+(let ((m {}))
+  (do-each (p (permuts ["T" "E" "R" "R" "O" "R"]))
+    ($!(str-join "" p) m 1))
+  (do-each (k v m)
+    (display k)
+    (newline)))
+(newline)
+
+;(display (length (filter (lambda (v j) (not (eq? j 1))) [])))
+;(newline)

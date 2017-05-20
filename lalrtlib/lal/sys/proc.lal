@@ -1,0 +1,45 @@
+(import (rt proc))
+
+(define lal-proc-prelude #<LUA
+  function main(args)
+    local lal = require 'lal.lal'
+    lal.eval(args[1], args[2])
+  end
+LUA)
+
+#| @sys-util procedure (sys-proc-spawn-lal _lal-code-string_ _lal-code-name_)
+
+This procedure works analog to `proc-spawn` and adds some prelude
+code for running LAL code in a new thread. All communication with that
+LAL thread works using the message passing API `mp-send` `mp-wait`.
+
+Example:
+
+    ---- test.lal ------
+    (import (rt mp))
+    (displayln "FOOOABBB")
+    { main: (lambda ()
+              (displayln MAIN-PROC:)
+              (mp-send end:)) }
+    ---- END test.lal ----
+
+    (import (rt mp))
+    (import (rt proc))
+    (import (sys proc))
+
+    (let ((p (sys-proc-spawn-lal #<LAL
+        (begin
+          (import (rt mp))
+          (import (test))
+          (test-main))
+    LAL "XX")))
+      (mp-wait-infinite end:))
+
+    (displayln ENDEND:)
+|#
+(define (spawn-lal lal-code program-name)
+  (proc-spawn
+   lal-proc-prelude
+   [lal-code program-name]))
+
+{ spawn-lal: spawn-lal }

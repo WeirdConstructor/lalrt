@@ -1,0 +1,20 @@
+(import (rt util))
+(import (rt lal))
+
+(add-test test-to-utf8-1:
+  (lambda ()
+    (.assert_eq *TC*
+     "[\"\\xc3\\xa4\\xc3\\x9f\"]"
+     (lal-dump (util-to-utf8 "дя" "iso8859-15")))))
+
+(add-test test-from-utf8-1:
+  (lambda ()
+    (.assert_eq *TC*
+     "[\"\\xe4\\xdf\"]"
+     (lal-dump (util-from-utf8 "\xc3;\xa4;\xc3;\x9f;" "iso8859-1")))))
+
+(add-test test-from-utf8-1:
+  (lambda ()
+    (.assert_eq *TC*
+     "[\"\\xe4\\xdf\"]"
+     (lal-dump (util-from-utf8 "\xFF;\xc3;\xa4;\xc3;\x9f;" "iso8859-1")))))

@@ -1,0 +1,33 @@
+(import (rt sys))
+(import (lua string))
+(import (lua os))
+(import (sys util))
+(import (rt lal))
+
+(add-test test-exec!-exists:
+ (lambda ()
+   (.assert_eq *TC* #t (not (not sys-exec!)))))
+
+(add-test test-exec!:
+  (lambda ()
+    (sys-util-write-file "sys_test.lal" "(displayln foobar:)")
+    (let ((exec-result (sys-exec! simple: "dist/LALRT.exe sys_test.lal")))
+      (.assert_eq *TC* #t (not (not exec-result)))
+      (.assert_eq *TC* 0 ($exit-code: exec-result))
+      (.assert_eq *TC* "*RETURN*" (lua-string-match ($stderr: exec-result) "%*RETURN%*"))
+      (.assert_eq *TC* "foobar\r\n" (lua-string-match ($stdout: exec-result) "foobar\r\n")))))
+
+(add-test test-find:
+  (lambda ()
+    (let ((lallib (lua-os-getenv "LALRT_LIB"))
+          (x (sys-find lallib  Rdi: [ ".*LAL" ".*lua" ]))
+          (x3 (sys-find lallib rfi: [ ".*LAL" ".*lua" ]))
+          (x4 (sys-find lallib R:))
+          (x5 (sys-find lallib R: ".*\\.lua"))
+          (x2 (sys-find lallib ri:  [ ".*LAL" ".*lua" ])))
+      (.assert_eq *TC* #t (and (> 4 (length x)) (< 1 (length x)))) ; find only few dirs
+      (.assert_eq *TC* #t (< 1 (length x)))                        ; find only the libdir
+      (.assert_eq *TC* 0 (length x3))                              ; find nothing
+      (.assert_eq *TC* 2 (length x2))                              ; find only the libdir
+      (.assert_eq *TC* #t (< 0 (length x4)))
+      (.assert_eq *TC* #t (< 0 (length x5))))))
