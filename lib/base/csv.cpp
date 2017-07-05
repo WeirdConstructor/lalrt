@@ -59,9 +59,18 @@ class CSVParser
             return next_char() == c;
         }
 
-        bool check_chars(const string &chrs)
+        bool check_substr(const string &chrs)
         {
-            if (rest_len() < chrs.size()) return false;
+            if (((size_t) rest_len()) < chrs.size()) return false;
+            size_t i = 0;
+            for (auto c : chrs)
+                if (m_data[m_pos + i++] != c) return false;
+            return true;
+        }
+
+        bool check_oneof(const string &chrs)
+        {
+            if (((size_t) rest_len()) < 1) return false;
             for (auto c : chrs)
                 if (m_data[m_pos] == c) return true;
             return false;
@@ -105,7 +114,7 @@ class CSVParser
 
             if (end_found) this->on_field(field_data);
 
-            if (rest_len() <= 0 || check_chars(m_row_sep))
+            if (rest_len() <= 0 || check_substr(m_row_sep))
             {
                 skip_char((int) m_row_sep.size());
                 this->on_row_end();
@@ -127,7 +136,7 @@ class CSVParser
 
             while (!end_found && rest_len() > 0)
             {
-                if (check_chars(m_row_sep))
+                if (check_substr(m_row_sep))
                 {
                     skip_char((int) m_row_sep.size());
                     end_found = true;
